@@ -9,7 +9,7 @@ module mau_simple (
     wire [31:0] abs_result = (operand_a[31]) ? (~operand_a + 1) : operand_a;
     wire signed [32:0] a_ext = {operand_a[31], operand_a};
     wire signed [32:0] b_ext = {operand_b[31], operand_b};
-    wire signed [32:0] diff = a_ext - b_ext;
+    wire signed [32:0] diff = a_ext - b_ext; 
     
     wire [31:0] max_result = (~diff[32]) ? operand_a : operand_b;
     wire [31:0] min_result = ( diff[32]) ? operand_a : operand_b;
