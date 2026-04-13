@@ -1,7 +1,7 @@
 import random
 
 # Funct3 mappings for the 4 RV32M multiplier instructions
-OPS = {
+OPS =  {
     "MUL":    "000", # Signed * Signed
     "MULH":   "001", # Signed * Signed
     "MULHSU": "010", # Signed * Unsigned
