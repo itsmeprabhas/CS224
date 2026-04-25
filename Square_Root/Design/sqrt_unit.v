@@ -13,7 +13,7 @@ module sqrt_unit (
     reg [31:0] d; // Radicand (Input)
     reg [31:0] q; // Root (Output)
     reg [33:0] r; // Remainder
-
+ 
     // Combinational checks for the FSM
     wire [33:0] next_r = {r[31:0], d[31:30]};
     wire [33:0] test_sub = next_r - {1'b0, q, 2'b01};
