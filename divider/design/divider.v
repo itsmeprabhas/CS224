@@ -3,109 +3,103 @@
 module divider (
     input  wire        clk,
     input  wire        rst,
+    input  wire        start,          // pulsed or held request
+    input  wire [2:0]  funct3,
     input  wire [31:0] operand_a,
     input  wire [31:0] operand_b,
-    input  wire [1:0]  div_op,      // 00=DIV, 01=DIVU, 10=REM, 11=REMU
-    input  wire        start,
-    
-    output reg  [31:0] quotient,
-    output reg  [31:0] remainder,
+    output reg  [31:0] result,
     output reg         valid,
-    output wire        busy
+    output reg         busy            // NEW: 1 = divider cannot accept a new request
 );
 
-    localparam IDLE    = 1'b0;
-    localparam COMPUTE = 1'b1;
-    
-    reg state;
-    reg [5:0] counter;
-    
-    // Operation decode
-    wire is_signed = (div_op == 2'b00) || (div_op == 2'b10);
-    
-    reg sign_quot, sign_rem, div_by_zero, overflow;
-    reg [31:0] A_orig;
-    
-    reg [31:0] P;
-    reg [31:0] A;
-    reg [31:0] B;
-    
-    assign busy = (state != IDLE) || (start && !valid);
-    
-    wire [31:0] P_shift = {P[30:0], A[31]};
-    wire [31:0] A_shift = {A[30:0], 1'b0};
-    
-    wire [31:0] next_P = (P_shift >= B) ? (P_shift - B) : P_shift;
-    wire [31:0] next_A = (P_shift >= B) ? (A_shift | 32'd1) : A_shift;
-    
-    // Final result adjustments
-    wire [31:0] fin_Q = sign_quot ? (~next_A + 1) : next_A;
-    wire [31:0] fin_R = sign_rem  ? (~next_P + 1) : next_P;
+    // ---- Opcode decode ----
+    wire is_signed = (funct3 == 3'b100 || funct3 == 3'b110);
+    wire is_rem    = (funct3 == 3'b110 || funct3 == 3'b111);
 
-    // Cleanly check overflow conditions
-    wire is_a_min   = (operand_a == 32'h80000000);
-    wire is_b_neg_1 = (operand_b == 32'hFFFFFFFF);
+    // ---- State machine ----
+    localparam IDLE = 2'd0, DIVIDE = 2'd1, DONE = 2'd2;
+    reg [1:0] state;
+    reg [5:0] count;
 
-    always @(posedge clk or posedge rst) begin
+    // ---- Internal registers ----
+    reg [31:0] Q, M, A;
+    reg        sign_q, sign_r, div_by_zero, overflow;
+
+    // ---- Absolute values & subtract result ----
+    wire [31:0] abs_a = (is_signed & operand_a[31]) ? (~operand_a + 1) : operand_a;
+    wire [31:0] abs_b = (is_signed & operand_b[31]) ? (~operand_b + 1) : operand_b;
+    wire [32:0] sub_res = {1'b0, A[30:0], Q[31]} - {1'b0, M};
+
+    always @(posedge clk) begin
         if (rst) begin
             state <= IDLE;
-            valid <= 0;
-            quotient <= 0;
-            remainder <= 0;
-            P <= 0;
-            A <= 0;
-            B <= 0;
-            counter <= 0;
-            sign_quot <= 0;
-            sign_rem <= 0;
-            div_by_zero <= 0;
-            overflow <= 0;
-            A_orig <= 0;
+            valid <= 1'b0;
+            busy  <= 1'b0;
+            result <= 32'd0;
+            Q <= 32'd0;
+            M <= 32'd0;
+            A <= 32'd0;
+            count <= 6'd0;
         end else begin
+            // ---- Default values ----
+            valid <= 1'b0;          // result is only valid for one cycle (see DONE)
+
+            // ---- Busy flag is purely combinational: high when not IDLE ----
+            // (registered here for timing; could also be a continuous assignment)
+            busy <= (state != IDLE);
+
             case (state)
+
                 IDLE: begin
-                    valid <= 0;
-                    if (start) begin
-                        sign_quot <= is_signed && (operand_a[31] ^ operand_b[31]);
-                        sign_rem  <= is_signed && operand_a[31];
-                        
-                        A <= (is_signed && operand_a[31]) ? (~operand_a + 1) : operand_a;
-                        B <= (is_signed && operand_b[31]) ? (~operand_b + 1) : operand_b;
-                        
-                        P <= 32'd0;
-                        counter <= 6'd32;
-                        
+                    if (start) begin   // only accepted when not busy
+                        // Load operands
+                        Q           <= abs_a;
+                        M           <= abs_b;
+                        A           <= 32'd0;
+                        count       <= 6'd32;
                         div_by_zero <= (operand_b == 32'd0);
-                        overflow    <= (is_signed && is_a_min && is_b_neg_1);
-                        A_orig      <= operand_a; // Stored to serve edge cases correctly (0/0 and generic fast tracking)
-                        
-                        state <= COMPUTE;
+                        overflow    <= (is_signed && operand_a == 32'h8000_0000 &&
+                                                       operand_b == 32'hFFFF_FFFF);
+                        sign_q      <= is_signed & (operand_a[31] ^ operand_b[31]);
+                        sign_r      <= is_signed & operand_a[31];
+                        state       <= DIVIDE;
                     end
                 end
-                
-                COMPUTE: begin
-                    P <= next_P;
-                    A <= next_A;
-                    
-                    if (counter == 1) begin
-                        valid <= 1;
-                        if (div_by_zero) begin
-                            // Fast override for RISC-V Div by Zero semantics
-                            quotient  <= 32'hFFFFFFFF;
-                            remainder <= A_orig;
-                        end else if (overflow) begin
-                            // Override for Overflow edge case perfectly
-                            quotient  <= 32'h80000000;
-                            remainder <= 32'd0;
+
+                DIVIDE: begin
+                    if (count == 0)
+                        state <= DONE;
+                    else begin
+                        if (sub_res[32]) begin
+                            A <= {A[30:0], Q[31]};
+                            Q <= {Q[30:0], 1'b0};
                         end else begin
-                            quotient  <= fin_Q;
-                            remainder <= fin_R;
+                            A <= sub_res[31:0];
+                            Q <= {Q[30:0], 1'b1};
                         end
-                        state <= IDLE;
-                    end else begin
-                        counter <= counter - 1;
+                        count <= count - 1;
                     end
                 end
+
+                DONE: begin
+                    valid <= 1'b1;                     // result ready for ONE cycle
+                    if (div_by_zero)
+                        result <= is_rem ? operand_a : 32'hFFFF_FFFF;
+                    else if (overflow)
+                        result <= is_rem ? 32'b0 : 32'h8000_0000;
+                    else begin
+                        if (is_rem)
+                            result <= sign_r ? (~A + 1) : A;
+                        else
+                            result <= sign_q ? (~Q + 1) : Q;
+                    end
+                    // Automatically return to IDLE next cycle - no handshake needed.
+                    // The pipeline must capture 'result' while valid is high.
+                    state <= IDLE;
+                end
+
+                default: state <= IDLE;
+
             endcase
         end
     end
