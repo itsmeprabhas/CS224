@@ -7,7 +7,7 @@ module multiplier (
     input wire [2:0] funct3,        // Decodes MUL, MULH, MULHU, MULHSU
     input wire [31:0] operand_a,    // rs1
     input wire [31:0] operand_b,    // rs2
-    output reg [63:0] product,      // Full 64-bit result
+    output reg [63:0] product,      // Full 64-bit result.  
     output reg valid                // Result ready flag
 );
 
