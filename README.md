@@ -114,4 +114,4 @@ python3 gen_vectors.py > test_vectors.txt
 | :--- | :--- | :--- |
 | **Komirisetty Prabhas** | 240101045 | Multiplier (DSP48), CLZ/LOG2, Pipeline EX modifications, Synthesis |
 | **Karyampudi Komal** | 240101041 | Divider (Restoring FSM), Pipeline Stall Logic, Python Golden Vectors, C Programs |
-| **Kasireddi Sai Chandra Kiran Naidu** | 240101042 | MAU Simple (ABS/MAX/MIN), SQRT FSM, UART/Display Drivers, FPGA Integration |
+| **Kasireddi Sai Chandra Kiran Naidu** | 240101042 | MAU Simple (ABS/MAX/MIN), SQRT FSM, Display Drivers, FPGA Integration |
