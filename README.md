@@ -88,7 +88,7 @@ Use the provided Makefile or run the following command to compile a C program in
 riscv32-unknown-elf-gcc -O1 -march=rv32im -mabi=ilp32 -nostdlib -T linker.ld -o program.elf program.c
 riscv32-unknown-elf-objcopy -O verilog program.elf program.hex
 ```
-  ###OR Another Way to generate Hex Files
+ ** OR Another Way to generate Hex Files **
 Add everything required to generate mem files to makefile
 ```bash
 make <your_c_prog_name>
