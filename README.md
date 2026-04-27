@@ -1,6 +1,6 @@
 # CS224: Extended RV32IM Processor with Mathematical Acceleration Unit (MAU)
 
-## 📌 Overview
+## Overview
 This project implements an extended **3-stage pipelined RV32IM RISC-V processor** enhanced with a **Custom Mathematical Acceleration Unit (MAU)** on a Xilinx Artix-7 FPGA (Nexys A7). 
 
 By expanding the base RV32I ISA from ~40 instructions to 53, the processor natively supports hardware multiplication/division and custom DSP instructions (ABS, MAX, MIN, SQRT, LOG2), eliminating expensive software emulation loops for mathematical workloads.
@@ -10,7 +10,7 @@ By expanding the base RV32I ISA from ~40 instructions to 53, the processor nativ
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 ### 3-Stage Pipeline
 Unlike standard 5-stage RISC-V implementations, this processor utilizes a compact **3-stage pipeline** (`IF/ID` → `EX` → `MEM/WB`):
@@ -23,7 +23,7 @@ Since multi-cycle operations (MUL: 3c, DIV: 32c, SQRT: 16c) reside in the `EX` s
 
 ---
 
-## 🧮 Instruction Set Architecture (ISA)
+## Instruction Set Architecture (ISA)
 
 ### 1. RV32M Extension (Hardware Multiply/Divide)
 *   **MUL, MULH, MULHU, MULHSU:** 32x32 multiplication returning 64-bit results (truncated to lower/upper 32 bits depending on instruction).
@@ -39,7 +39,7 @@ Uses the standard RISC-V `custom-0` opcode space mapped via `funct3`.
 
 ---
 
-## ⚙️ Hardware Modules
+## Hardware Modules
 
 | Module | File | Description |
 | :--- | :--- | :--- |
@@ -54,7 +54,7 @@ Uses the standard RISC-V `custom-0` opcode space mapped via `funct3`.
 
 ---
 
-## 🚀 Use Cases & FPGA Validation
+## Use Cases & FPGA Validation
 The system was validated on the FPGA using 5+ C programs compiled with `-march=rv32im`:
 1. **DSP Filtering:** 16-tap FIR filter using `MUL` and `ABS`.
 2. **Euclidean Distance:** Calculates $\sqrt{(x_1-x_2)^2 + (y_1-y_2)^2}$ using `SUB`, `MUL`, `ADD`, `SQRT`.
@@ -64,7 +64,7 @@ The system was validated on the FPGA using 5+ C programs compiled with `-march=r
 
 ---
 
-## 📊 Resource Utilization (Synthesis Estimates)
+## Resource Utilization (Synthesis Estimates)
 *Target: Xilinx Artix-7 XC7A100T (Nexys A7)*
 
 | Resource | Usage | Utilization |
@@ -76,7 +76,7 @@ The system was validated on the FPGA using 5+ C programs compiled with `-march=r
 
 ---
 
-## 🛠️ Setup & Getting Started
+## Setup & Getting Started
 
 ### Prerequisites
 *   Xilinx Vivado (2022.1 or later recommended)
@@ -108,7 +108,7 @@ python3 gen_vectors.py > test_vectors.txt
 
 ---
 
-## 👥 Team Members
+## Team Members
 
 | Name | Roll Number | Responsibilities |
 | :--- | :--- | :--- |
