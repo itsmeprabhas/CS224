@@ -98,7 +98,7 @@ make <your_c_prog_name>
 ### Simulation
 Module-level testbenches (e.g., `tb_multiplier.v`, `tb_divider.v`) can be run using Vivado XSIM or ModelSim. Golden vectors are generated via the included Python scripts:
 ```bash
-python3 gen_vectors.py > test_vectors.txt
+python3 gen_vectors.py > input.txt
 ```
 
 ### FPGA Build
